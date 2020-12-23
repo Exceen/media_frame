@@ -1,19 +1,23 @@
 #!/bin/bash
 
 
-FILE=/home/pi/scripts/github/media_frame/data/disable
+DISABLE_FILE=/home/pi/scripts/github/media_frame/data/disable
+PID_FILE=/home/pi/scripts/github/media_frame/data/pid
 pid=0
 while true; do
+	if [ -f $PID_FILE ]; then
+		pid=$(cat /home/pi/scripts/github/media_frame/data/pid);
+	fi;
 
 	if [ $pid -eq 0 ] || [ ! -n "$(ps -p $pid -o pid=)" ]; then
-		if [ ! -f $FILE ]; then
+		if [ ! -f $DISABLE_FILE ]; then
 			pid=$(/home/pi/scripts/github/media_frame/scripts/start_media_frame.sh)
 			echo $pid > /home/pi/scripts/github/media_frame/data/pid;
 		else
-			echo "surpressing";
+			echo "disabled";
 		fi;
 	else
-		echo "already running";
+		echo "running on ${pid}";
 	fi;
 
 	sleep 15;
