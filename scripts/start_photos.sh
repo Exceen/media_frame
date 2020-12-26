@@ -8,7 +8,7 @@ python /home/pi/scripts/github/media_frame/pi3d_demos/PictureFrame2020.py \
     --shuffle 1 \
     --pic_dir /home/pi/scripts/github/media_frame/data/photos \
     --fade_time 6 \
-    --time_delay 30 \
+    --time_delay 3600 \
     --show_text_tm 0 \
     --check_dir_tm 60 \
     --show_text "" > /dev/null&
