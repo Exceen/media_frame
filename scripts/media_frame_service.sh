@@ -4,6 +4,9 @@
 DISABLE_FILE=/home/pi/scripts/github/media_frame/data/disable
 PID_FILE=/home/pi/scripts/github/media_frame/data/pid
 pid=0
+
+rm -f /home/pi/scripts/github/media_frame/data/music/is_active
+
 while true; do
 	if [ -f $PID_FILE ]; then
 		pid=$(cat /home/pi/scripts/github/media_frame/data/pid);

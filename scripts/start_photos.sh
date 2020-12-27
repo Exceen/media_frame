@@ -11,7 +11,7 @@ python /home/pi/scripts/github/media_frame/pi3d_demos/PictureFrame2020.py \
     --fade_time 6 \
     --time_delay 3600 \
     --show_text_tm 0 \
-    --check_dir_tm 60 \
+    --check_dir_tm 3600 \
     --show_text "" > /dev/null&
 
 echo $!;
