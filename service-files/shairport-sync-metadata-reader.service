@@ -1,0 +1,16 @@
+[Unit]
+Description=Shairport-Sync Metadata Reader
+#Wants=sound.target
+#After=sound.target
+#Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=pi
+Group=pi
+ExecStart=/home/pi/scripts/github/media_frame/scripts/start_shairport_sync_metadata_reader.sh
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target

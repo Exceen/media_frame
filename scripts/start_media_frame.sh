@@ -1,4 +1,6 @@
 #!/bin/bash
+export DISPLAY=:0.0
+
 
 MUSIC_IS_ACTIVE_PATH=/home/pi/scripts/github/media_frame/data/music/is_active
 

@@ -3,12 +3,72 @@ import paho.mqtt.client as mqtt
 import os
 import subprocess
 import urllib.request
+import spotipy
+from spotipy.oauth2 import SpotifyClientCredentials
 
 base_path = '/home/pi/scripts/github/media_frame/data/music/'
 
-def main():
-    playerctl_state = execute('/usr/bin/playerctl --player=spotifyd status')
 
+# def get_track_information_spotifyapi():
+#     player_event = os.getenv('PLAYER_EVENT')
+#     trackid = os.getenv('TRACK_ID')
+
+#     sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id='', client_secret=''))
+#     urn = 'spotify:track:' + trackid 
+
+#     track = sp.track(urn)
+
+#     state = None
+#     if player_event == 'start' or player_event == 'change':
+#         state = 'play'
+#     elif player_event == 'stop':
+#         state = 'pause'
+#     else:
+#         print('Error at receiving status')
+#         quit()
+
+#     artist = track['artists'][0]['name']
+#     track_information = track['name'] + ' - ' + artist
+#     return state, track_information
+
+
+# def get_old_track_information_spotifyapi():
+#     player_event = os.getenv('PLAYER_EVENT')
+#     trackid = os.getenv('OLD_TRACK_ID')
+
+#     sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id='', client_secret=''))
+#     urn = 'spotify:track:' + trackid 
+
+#     track = sp.track(urn)
+
+#     state = None
+#     if player_event == 'start' or player_event == 'change':
+#         state = 'play'
+#     elif player_event == 'stop':
+#         state = 'pause'
+#     else:
+#         print('Error at receiving status')
+#         quit()
+
+#     artist = track['artists'][0]['name']
+#     track_information = track['name'] + ' - ' + artist
+#     return state, track_information
+
+
+
+# def get_artists_from_track(track):
+#     artist = ''
+#     artists = track['artists']
+#     for i in xrange(0, len(artists)):
+#         artist += artists[i]['name']
+#         if i != len(artists) - 1:
+#             artists += ', '
+
+#     return artist
+
+
+def get_track_information_playerctl():
+    playerctl_state = execute('/usr/bin/playerctl --player=spotifyd status')
     state = None
     if playerctl_state == 'Paused':
         state = 'pause'
@@ -19,6 +79,19 @@ def main():
         quit()
 
     track_information = execute('/usr/bin/playerctl --player=spotifyd metadata --format "{{ artist }} - {{ title }}"')
+
+    return state, track_information
+
+def main():
+
+    # state, track_information = get_track_information_spotifyapi()
+    # print('Spotify:', state, track_information)
+
+    # state, track_information = get_old_track_information_spotifyapi()
+    # print('OldSpotify:', state, track_information)
+
+    state, track_information = get_track_information_playerctl()
+    # print('playerctl:', state, track_information)
 
     if state == 'pause':
         track_information = 'PAUSED ' + track_information

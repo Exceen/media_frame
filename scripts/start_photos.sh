@@ -1,4 +1,5 @@
 #!/bin/bash
+export DISPLAY=:0.0;
 python /home/pi/scripts/github/media_frame/pi3d_demos/PictureFrame2020.py \
     --blur_edges 1 \
     --keyboard 1 \
