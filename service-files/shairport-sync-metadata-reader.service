@@ -1,9 +1,7 @@
 [Unit]
 Description=Shairport-Sync Metadata Reader
-#Wants=sound.target
-#After=sound.target
-#Wants=network-online.target
-After=network-online.target
+After=network.target
+Requires=media-frame.service
 
 [Service]
 User=pi
@@ -13,4 +11,4 @@ Restart=always
 RestartSec=10
 
 [Install]
-WantedBy=default.target
+WantedBy=multi-user.target

@@ -1,0 +1,17 @@
+[Unit]
+Description=A spotify playing daemon
+Wants=sound.target
+After=sound.target
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=pi
+Group=pi
+ExecStart=/home/pi/scripts/github/media_frame/scripts/spotifyd.sh
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+
