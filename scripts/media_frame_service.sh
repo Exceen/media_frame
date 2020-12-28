@@ -17,12 +17,13 @@ while true; do
 			pid=$(/home/pi/scripts/github/media_frame/scripts/start_media_frame.sh)
 			echo $pid > /home/pi/scripts/github/media_frame/data/pid;
 		else
-			echo "disabled";
+#			echo "disabled";
+            sleep 14;
 		fi;
-	else
-		echo "running on ${pid}";
+#	else
+#		echo "running on ${pid}";
 	fi;
 
-	sleep 15;
+	sleep 1;
 
 done;
