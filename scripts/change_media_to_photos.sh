@@ -11,7 +11,7 @@ if [ ! -f $DISABLE_FILE ]; then
 	echo $new_pid > /home/pi/scripts/github/media_frame/data/pid;
 
 
-	sleep 6;
+	sleep 15;
 
 	if [ -n "$(ps -p $old_pid -o pid=)" ]; then
 	    kill $old_pid;
