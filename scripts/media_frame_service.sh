@@ -16,6 +16,7 @@ while true; do
 		if [ ! -f $DISABLE_FILE ]; then
 			pid=$(/home/pi/scripts/github/media_frame/scripts/start_media_frame.sh)
 			echo $pid > /home/pi/scripts/github/media_frame/data/pid;
+            echo "started new frame on $pid"
 		else
 #			echo "disabled";
             sleep 14;
