@@ -1,10 +1,14 @@
 ground -> ground
 pwr -> gpio pin 27 (13)
 
+ground -> ground
+green led -> gpio pin 13 (33)
+
+
 second raspberry pi is used to toggle display on/off
 
 
 GPIO pin needs to be set up as HIGH
 to simulate a button press it is required to set it to LOW briefly
--> switch_v2.py
+
 
