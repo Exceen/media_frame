@@ -17,8 +17,8 @@ wait_for_artwork_process = []
 def set_track_information(state, track_information):
     global wait_for_artwork_process
 
-    if state == 'pause':
-        track_information = 'PAUSED ' + track_information
+#    if state == 'pause':
+#        track_information = 'PAUSED ' + track_information
 
     path = base_path + 'current_track.txt'
 

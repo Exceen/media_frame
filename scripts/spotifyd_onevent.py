@@ -93,8 +93,8 @@ def main():
     state, track_information = get_track_information_playerctl()
     # print('playerctl:', state, track_information)
 
-    if state == 'pause':
-        track_information = 'PAUSED ' + track_information
+#    if state == 'pause':
+#        track_information = 'PAUSED ' + track_information
 
     path = base_path + 'current_track.txt'
 
