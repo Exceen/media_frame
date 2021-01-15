@@ -8,12 +8,14 @@ python /home/pi/scripts/github/media_frame/pi3d_demos/PictureFrame2020.py \
     --blur_amount 5 \
     --background "(0, 0, 0, 1.0)" \
     --shuffle 1 \
-    --pic_dir /home/pi/scripts/github/media_frame/data/music/artwork \
+    --check_dir_tm 10800 \
+    --show_text_tm 10800 \
+    --text_width 45 \
+    --pic_dir /home/pi/scripts/github/media_frame/data \
+    \
+    --subdirectory "music/artwork" \
     --fade_time 3 \
-    --time_delay 9999 \
-    --show_text_tm 9999 \
-    --check_dir_tm 9999 \
-    --show_text "music" \
-    --text_width 45 > /dev/null&
+    --time_delay 10800 \
+    --show_text "music" > /dev/null&
     
 echo $!;    
