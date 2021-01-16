@@ -39,7 +39,7 @@ def set_track_information(state, track_information):
         # frame_next('track pause')
 
         print('paused')
-        print('starting new PictureFrame for photos')
+        print('changing PictureFrame to photos')
         kill_wait_for_artwork_process()
         os.system('/home/pi/scripts/github/media_frame/scripts/change_media_to_photos.sh')
 
@@ -100,7 +100,7 @@ def frame_next(info = ''):
     else:
         print('frame/next ' + info)
         kill_wait_for_artwork_process()
-        print('starting new PictureFrame for music')
+        print('changing PictureFrame to music')
         os.system('/home/pi/scripts/github/media_frame/scripts/change_media_to_music.sh')
 
 def get_artwork_url(track_information):

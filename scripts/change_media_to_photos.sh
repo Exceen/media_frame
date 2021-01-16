@@ -7,10 +7,12 @@ if [ ! -f $DISABLE_FILE ]; then
 
 
     ###
+    
+    mosquitto_pub -h localhost -t "frame/time_delay" -m "600"
+    mosquitto_pub -h localhost -t "frame/text_off" -m ""
     mosquitto_pub -h localhost -t "frame/subdirectory" -m "photos"
     mosquitto_pub -h localhost -t "frame/fade_time" -m "6"
-    mosquitto_pub -h localhost -t "frame/time_delay" -m "600"
-    mosquitto_pub -h localhost -t "frame/next" -m ""
+    # mosquitto_pub -h localhost -t "frame/next" -m ""
     ###
 
 	# old_pid=$(cat /home/pi/scripts/github/media_frame/data/pid);

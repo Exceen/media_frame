@@ -16,6 +16,6 @@ python /home/pi/scripts/github/media_frame/pi3d_demos/PictureFrame2020.py \
     --subdirectory "photos" \
     --fade_time 6 \
     --time_delay 600 \
-    --show_text "music" > /dev/null&
+    --show_text "" > /dev/null&
 
 echo $!;

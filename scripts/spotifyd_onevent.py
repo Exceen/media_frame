@@ -121,7 +121,7 @@ def main():
     if state == 'pause':
         # frame_next('track pause')
         print('paused')
-        print('starting new PictureFrame for photos')
+        print('changing PictureFrame to photos')
         os.system('/home/pi/scripts/github/media_frame/scripts/change_media_to_photos.sh')
 
 
@@ -149,7 +149,7 @@ def frame_next(info = ''):
         print('frame/next ' + info)
     else:
         print('frame/next ' + info)
-        print('starting new PictureFrame for music')
+        print('changing PictureFrame to music')
         os.system('/home/pi/scripts/github/media_frame/scripts/change_media_to_music.sh')
 
 if __name__ == '__main__':
