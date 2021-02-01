@@ -12,6 +12,7 @@ python /home/pi/scripts/github/media_frame/pi3d_demos/PictureFrame2020.py \
     --show_text_tm 10800 \
     --text_width 45 \
     --pic_dir /home/pi/scripts/github/media_frame/data \
+    --two_line_track 1 \
     \
     --subdirectory "music/artwork" \
     --fade_time 3 \
