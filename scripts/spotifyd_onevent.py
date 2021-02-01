@@ -76,8 +76,10 @@ def get_track_information_playerctl():
     elif playerctl_state == 'Playing':
         state = 'play'
     else:
-        print('Error at receiving status')
-        quit()
+        state = 'pause'
+        print('Error at receiving status, assuming paused state')
+        return state, ''
+        # quit()
 
     track_information = execute('/usr/bin/playerctl --player=spotifyd metadata --format "{{ artist }} - {{ title }}"')
 
@@ -100,8 +102,9 @@ def main():
     path = base_path + 'current_track.txt'
 
     previous_track = None
-    with open(base_path + 'current_track.txt', 'r') as f:
-        previous_track = f.read()
+    if os.path.isfile(path):
+        with open(path, 'r') as f:
+            previous_track = f.read()
 
     if previous_track != track_information:
         f = open(path, 'w')

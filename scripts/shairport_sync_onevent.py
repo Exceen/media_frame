@@ -23,8 +23,10 @@ def set_track_information(state, track_information):
     path = base_path + 'current_track.txt'
 
     previous_track = None
-    with open(base_path + 'current_track.txt', 'r') as f:
-        previous_track = f.read()
+
+    if os.path.isfile(path):
+        with open(path, 'r') as f:
+            previous_track = f.read()
 
     if previous_track != track_information:
         f = open(path, 'w')

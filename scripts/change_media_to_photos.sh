@@ -4,6 +4,7 @@
 DISABLE_FILE=/home/pi/scripts/github/media_frame/data/disable
 if [ ! -f $DISABLE_FILE ]; then
 	rm -f /home/pi/scripts/github/media_frame/data/music/is_active
+	rm -f /home/pi/scripts/github/media_frame/data/music/current_track.txt
 
 
     ###
