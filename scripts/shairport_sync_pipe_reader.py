@@ -270,10 +270,12 @@ def notify(state, metadata):
             track_information += ' - '
         track_information += metadata['itemname']
 
-    shairport_sync_onevent.set_track_information(state, track_information)
+    # shairport_sync_onevent.set_track_information(state, track_information)
+    os.system('/home/pi/scripts/github/media_frame/scripts/shairport_sync_onevent.py')
 
 def notify_album_artwork(path):
-    shairport_sync_onevent.set_album_artwork(path)
+    # shairport_sync_onevent.set_album_artwork(path)
+    pass
 
 # cat /tmp/shairport-sync-metadata | /usr/bin/python3 ./output_text.py
 # cat /tmp/shairport-sync-metadata | python3 ~/scripts/github/shairport-sync-metadata-python/bin/output_text.py
