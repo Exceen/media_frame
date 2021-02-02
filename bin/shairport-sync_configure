@@ -1,0 +1,12 @@
+
+
+ ./configure \
+--sysconfdir=/etc  \
+--with-alsa \
+--with-avahi \
+--with-soxr \
+--with-metadata \
+--with-ssl=openssl \
+--with-dbus-interface \
+--with-mpris-interface \
+
