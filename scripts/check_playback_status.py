@@ -9,7 +9,7 @@ def is_anything_playing():
     anything_playing = False
     for player in players:
         status = execute('/usr/bin/playerctl --player=' + player + ' status').replace('\n', '').strip()
-        print(player, status)
+#        print(player, status)
 
         if 'Playing' in status:
             return True
