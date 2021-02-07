@@ -13,9 +13,8 @@ base_path = '/home/pi/scripts/github/media_frame/data/music/'
 
 player = None
 
-youtube_videos_enabled = True
-
 def check_for_music_video(track_information):
+    youtube_videos_enabled = os.path.isfile(base_path + 'music_videos_enabled')
     if youtube_videos_enabled:
 
         url = youtube.get_music_video_url.get_url(track_information)
