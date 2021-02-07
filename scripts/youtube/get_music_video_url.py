@@ -22,6 +22,7 @@ def read_file(path):
     return ''
 
 API_KEY = read_file(API_KEY_PATH).strip()
+pafy.set_api_key(API_KEY)
 
 ISO8601_TIMEDUR_EX = re.compile(r'PT((\d{1,3})H)?((\d{1,3})M)?((\d{1,2})S)?')
 
@@ -38,8 +39,10 @@ def main():
     parser.add_argument('search', nargs='+')
     args = parser.parse_args()
     term = str(' '.join(args.search))
-    pafy.set_api_key(API_KEY)
-    
+
+    print(get_url(term))
+
+def get_url(term):
     songs = search(term)
 
     music_video = None
@@ -50,11 +53,8 @@ def main():
 
     if music_video:
         base_url = 'https://www.youtube.com/watch?v=%s'
-
-#        print(music_video)
-        print(base_url % music_video.ytid)
-
-
+        # print(base_url % music_video.ytid)
+        return base_url % music_video.ytid
 
 def search(term):
     query = generate_search_qs(term)
@@ -339,8 +339,6 @@ class IterSlicer():
         if self.length is None:
             self.length = len(self[:])
         return self.length
-
-
 
 if __name__ == '__main__':
     main()

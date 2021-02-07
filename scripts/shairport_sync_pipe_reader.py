@@ -16,7 +16,6 @@ import sys
 import tempfile
 import time
 from multiprocessing import Process
-import shairport_sync_onevent
 
 try:
     from asciimatics.renderers import ImageFile  # pip install asciimatics
@@ -271,7 +270,7 @@ def notify(state, metadata):
         track_information += metadata['itemname']
 
     # shairport_sync_onevent.set_track_information(state, track_information)
-    os.system('/home/pi/scripts/github/media_frame/scripts/shairport_sync_onevent.py')
+    os.system('/home/pi/scripts/github/media_frame/scripts/onevent.py ShairportSync')
 
 def notify_album_artwork(path):
     # shairport_sync_onevent.set_album_artwork(path)
