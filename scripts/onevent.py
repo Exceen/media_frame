@@ -13,23 +13,44 @@ base_path = '/home/pi/scripts/github/media_frame/data/music/'
 
 player = None
 
+def get_music_video_path(track_information, music_videos_path):
+    for f in os.listdir(music_videos_path):
+        if track_information in f:
+            return music_videos_path + f
+    return None
+
 def check_for_music_video(track_information):
     youtube_videos_enabled = os.path.isfile(base_path + 'music_videos_enabled')
+    # youtube_videos_enabled = False
     if youtube_videos_enabled:
+        music_videos_path = base_path + 'music_videos/'
+        music_video_path = get_music_video_path(track_information, music_videos_path)
+        if music_video_path is None:
+            url = youtube.get_music_video_url.get_url(track_information)
+            if url:
+                print('music video url: ' + url)
+                # youtube-dl -f worst -o "Meshuggah - Clockworks.%(ext)s"   https://www.youtube.com/watch?v=oFiDcazicdk
+                download_cmd = '/home/pi/.local/bin/youtube-dl -f worst -o "'  + music_videos_path + track_information + '.%(ext)s" "' + url + '"&';
+                os.system(download_cmd)
+                quit()
+        else:
 
-        url = youtube.get_music_video_url.get_url(track_information)
-        if url:
-            print('music video url: ' + url)
+            print('music video already downloaded!')
+            print(music_video_path)
 
             # volume = execute('/usr/bin/playerctl --player=' + player + ' volume')
             # print('volume: ' + volume)
 
             os.system('/usr/bin/playerctl --player=' + player + ' pause')
-            vlc_cmd = '/home/pi/.local/bin/youtube-dl -f worst -o - "' + url + '" | /usr/bin/vlc -f --play-and-exit -'
+            # vlc_cmd = '/home/pi/.local/bin/youtube-dl -f worst -o - "' + url + '" | /usr/bin/vlc -f --play-and-exit -'
+            vlc_cmd = '/usr/bin/vlc -f --play-and-exit "' + music_video_path + '"'
             next_cmd = '/usr/bin/playerctl --player=' + player + ' next'
-            os.system(vlc_cmd + '; ' + next_cmd)
 
+
+            print('vlc_cmd: ' + vlc_cmd)
+            os.system(vlc_cmd + '; ' + next_cmd)
             # os.system('/usr/bin/playerctl --player=vlc volume ' + volume)
+
 
             # with open(os.devnull, "w") as devnull:
             #     p = subprocess.Popen(cmd, shell=False, stderr=devnull)
@@ -37,10 +58,10 @@ def check_for_music_video(track_information):
             # next()
 
             quit()
-        else:
-            print('no music video found')
+
+
+        print('no music video found')
     # playerctl --player=spotifyd pause; ./playmusic.sh "Fit for an autopsy" ; playerctl --player=spotifyd next;
-    pass
 
 def main():
     print('onevent!')
