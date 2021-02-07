@@ -5,7 +5,7 @@ import subprocess
 import urllib.request
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
-import time
+# import time
 
 base_path = '/home/pi/scripts/github/media_frame/data/music/'
 
@@ -28,8 +28,10 @@ def get_track_information_playerctl():
     return state, track_information
 
 def main():
-    time.sleep(0.1)
+    # time.sleep(0.1)
+    print('getting track information')
     state, track_information = get_track_information_playerctl()
+    print('track_information:', state, track_information)
 
 #    if state == 'pause':
 #        track_information = 'PAUSED ' + track_information

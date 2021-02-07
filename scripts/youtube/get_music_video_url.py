@@ -6,34 +6,22 @@ import sys
 import json
 import logging
 from datetime import datetime, timezone
-import g, c, terminalsize, description_parser
-import content
-import screen
-import streams
 from urllib.error import HTTPError, URLError
 import socket
-import util
 import os
-
-
 import time
-# import traceback
-# import locale
-
-# import ctypes
-# import subprocess
-# import collections
-# import unicodedata
-# import urllib
-# import platform
-
-
 from argparse import ArgumentParser
 
-API_KEY = 'AIzaSyAS82J1PBStNBBNF4yMMJco3Bg-ojtoG1A'
 
+API_KEY_PATH = '/home/pi/scripts/github/media_frame/data/music/youtube_api_key'
 
+def read_file(path):
+    if os.path.isfile(path):
+        with open(path, 'r') as f:
+            return f.read()
+    return ''
 
+API_KEY = read_file(API_KEY_PATH).strip()
 
 ISO8601_TIMEDUR_EX = re.compile(r'PT((\d{1,3})H)?((\d{1,3})M)?((\d{1,2})S)?')
 
@@ -63,7 +51,7 @@ def main():
     if music_video:
         base_url = 'https://www.youtube.com/watch?v=%s'
 
-        print(music_video)
+#        print(music_video)
         print(base_url % music_video.ytid)
 
 
@@ -256,7 +244,6 @@ def get_tracks_from_json(jsons):
                 viewCount=str(num_repr(int(stats.get('viewCount', 0)))))
 
         except Exception as e:
-            print(e)
             dbg(json.dumps(item, indent=2))
             dbg('Error during metadata extraction/instantiation of ' +
                 'search result {}\n{}'.format(ytid, e))
@@ -273,16 +260,6 @@ def dbg(*args):
 
 def utc2local(utc):
     return utc.replace(tzinfo=timezone.utc).astimezone(tz=None)
-
-def yt_datetime_local(yt_date_time):
-    """ Return a datetime object, locale converted and formated date string and locale converted and formatted time string. """
-    datetime_obj = datetime.strptime(yt_date_time, "%Y-%m-%dT%H:%M:%SZ")
-    datetime_obj = utc2local(datetime_obj)
-    locale_date = datetime_obj.strftime("%x")
-    locale_time = datetime_obj.strftime("%X")
-    # strip first two digits of four digit year
-    short_date = re.sub(r"(\d\d\D\d\d\D)20(\d\d)$", r"\1\2", locale_date)
-    return datetime_obj, short_date, locale_time
 
 def fmt_time(seconds):
     """ Format number of seconds to %H:%M:%S. """
