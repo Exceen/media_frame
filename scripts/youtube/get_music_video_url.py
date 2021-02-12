@@ -42,12 +42,34 @@ def main():
 
     print(get_url(term))
 
+def is_music_video(video, term):
+    video_title_lower = video.title.lower()
+
+    if 'official music video' in video_title_lower and term.lower() in video_title_lower:
+        return True
+
+    search_items = ['official', 'music', 'video']
+
+    added_something = False
+    for item in term.split(' '):
+        if len(item) >= 3:
+            search_items.append(item)
+            added_something = True
+
+    if not added_something:
+        return False
+
+    for search_item in search_items:
+        if not search_item.lower() in video_title_lower:
+            return False
+    return True
+
 def get_url(term):
     songs = search(term)
 
     music_video = None
     for song in songs:
-        if 'official music video' in song.title.lower() and term.lower() in song.title.lower():
+        if is_music_video(song, term):
             music_video = song
             break
 
@@ -120,7 +142,7 @@ def _search(progtext, qs=None):
 
     func = slicer
     s = 0
-    e = 1
+    e = 3
     
 
     if callable(func):
