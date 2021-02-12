@@ -8,6 +8,7 @@ import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 import argparse
 import youtube.get_music_video_url
+from multiprocessing import Process
 
 base_path = '/home/pi/scripts/github/media_frame/data/music/'
 
@@ -19,49 +20,66 @@ def get_music_video_path(track_information, music_videos_path):
             return music_videos_path + f
     return None
 
+def download_video(url, music_videos_path, track_information):
+    # youtube-dl -f worst -o "Meshuggah - Clockworks.%(ext)s"   https://www.youtube.com/watch?v=oFiDcazicdk
+    # download_cmd = '/home/pi/.local/bin/youtube-dl -f best -o "'  + music_videos_path + track_information + '.%(ext)s" "' + url + '"&';
+    max_height = str(768)
+    download_cmd = '/home/pi/.local/bin/youtube-dl -f \'bestvideo[height<=' + max_height + ']+bestaudio/best[height<=' + max_height + ']\' -o "'  + music_videos_path + track_information + '.%(ext)s" "' + url + '"&';
+
+    print('executing: "' + download_cmd + '"')
+    os.system(download_cmd)
+
+def play_video(music_video_path):
+    volume = 0.0
+    try:
+        volume = float(execute('/usr/bin/playerctl --player=' + player + ' volume'))
+        if volume > 1.0:
+            volume /= 100
+    except Exception as e:
+        print(e)
+    print(player + ' volume: ' + str(volume))
+
+    os.system('/usr/bin/playerctl --player=' + player + ' pause')
+    # vlc_cmd = '/home/pi/.local/bin/youtube-dl -f worst -o - "' + url + '" | /usr/bin/vlc -f --play-and-exit -'
+    vlc_cmd = '/usr/bin/vlc -f --play-and-exit "' + music_video_path + '"'
+    next_cmd = '/usr/bin/playerctl --player=' + player + ' next'
+
+    print('vlc_cmd: ' + vlc_cmd)
+    os.system(vlc_cmd + '; ' + next_cmd + '&')
+    # quit() # no need to check for available download
+
 def check_for_music_video(track_information):
-    youtube_videos_enabled = os.path.isfile(base_path + 'music_videos_enabled')
-    # youtube_videos_enabled = False
-    if youtube_videos_enabled:
-        music_videos_path = base_path + 'music_videos/'
-        music_video_path = get_music_video_path(track_information, music_videos_path)
+    play_youtube_videos = os.path.isfile(base_path + 'play_youtube_videos')
+    download_youtube_videos = os.path.isfile(base_path + 'download_youtube_videos')
+
+    play_youtube_videos = False
+    download_youtube_videos = True
+
+    music_videos_path = base_path + 'music_videos/'
+    music_video_path = get_music_video_path(track_information, music_videos_path)
+
+    if play_youtube_videos:
+        if music_video_path is None:
+            print('music video not found on local disk')
+        else:
+            print('music video found on local disk')
+            print(music_video_path)
+
+            process = Process(target=play_video, args=(music_video_path, ))
+            process.start()
+
+    if download_youtube_videos:
         if music_video_path is None:
             url = youtube.get_music_video_url.get_url(track_information)
             if url:
                 print('music video url: ' + url)
-                # youtube-dl -f worst -o "Meshuggah - Clockworks.%(ext)s"   https://www.youtube.com/watch?v=oFiDcazicdk
-                download_cmd = '/home/pi/.local/bin/youtube-dl -f worst -o "'  + music_videos_path + track_information + '.%(ext)s" "' + url + '"&';
-                os.system(download_cmd)
-                quit()
+                process = Process(target=download_video, args=(url, music_videos_path, track_information, ))
+                process.start()
+            else:
+                print('no music video found on youtube')
         else:
-
             print('music video already downloaded!')
             print(music_video_path)
-
-            # volume = execute('/usr/bin/playerctl --player=' + player + ' volume')
-            # print('volume: ' + volume)
-
-            os.system('/usr/bin/playerctl --player=' + player + ' pause')
-            # vlc_cmd = '/home/pi/.local/bin/youtube-dl -f worst -o - "' + url + '" | /usr/bin/vlc -f --play-and-exit -'
-            vlc_cmd = '/usr/bin/vlc -f --play-and-exit "' + music_video_path + '"'
-            next_cmd = '/usr/bin/playerctl --player=' + player + ' next'
-
-
-            print('vlc_cmd: ' + vlc_cmd)
-            os.system(vlc_cmd + '; ' + next_cmd)
-            # os.system('/usr/bin/playerctl --player=vlc volume ' + volume)
-
-
-            # with open(os.devnull, "w") as devnull:
-            #     p = subprocess.Popen(cmd, shell=False, stderr=devnull)
-            #     p.wait()
-            # next()
-
-            quit()
-
-
-        print('no music video found')
-    # playerctl --player=spotifyd pause; ./playmusic.sh "Fit for an autopsy" ; playerctl --player=spotifyd next;
 
 def main():
     print('onevent!')
@@ -81,8 +99,6 @@ def main():
     print('track_information:', state, track_information)
 
     if state != 'pause':
-        check_for_music_video(track_information)
-
         path = base_path + 'current_track.txt'
         previous_track = None
         if os.path.isfile(path):
@@ -101,6 +117,8 @@ def main():
                 spotifyd(artwork_url, pic_dir)
             elif player == 'ShairportSync':
                 shairport(artwork_url, pic_dir, track_information)
+
+            check_for_music_video(track_information)
     else:
         print('paused')
         print('changing PictureFrame to photos')
