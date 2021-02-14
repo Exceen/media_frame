@@ -1,7 +1,7 @@
 #!/bin/bash
 # echo "" > /home/pi/scripts/github/media_frame/data/music/current_track.txt
 export DISPLAY=:0.0;
-python /home/pi/scripts/github/media_frame/pi3d_demos/PictureFrame2020.py \
+python /home/pi/scripts/github/media_frame/scripts/pi3d/PictureFrame2020.py \
     --blur_edges 1 \
     --keyboard 1 \
     --use_mqtt 1 \

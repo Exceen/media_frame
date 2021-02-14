@@ -14,5 +14,5 @@ fi
 
 # "https://www.youtube.com/watch?v=NxLYJJnlGs8"
 #youtube-dl -f worst -o - "https://www.youtube.com/watch?v=NxLYJJnlGs8" | vlc -f --play-and-exit -
-youtube-dl -f worst -o - $URL | vlc -f --play-and-exit -
+youtube-dl -f best -o - $URL | vlc -f --play-and-exit -
 
