@@ -4,7 +4,7 @@ import subprocess
 import time
 
 
-def is_anything_playing():
+def get_running_player():
     players = execute('/usr/bin/playerctl -l').strip().split('\n')
     anything_playing = False
     for player in players:
@@ -12,9 +12,12 @@ def is_anything_playing():
 #        print(player, status)
 
         if 'Playing' in status:
-            return True
+            return player
 
-    return False
+    return None
+
+def is_anything_playing():
+    return get_running_player() != None
 
 def is_music_view_active():
     music_is_active_file = '/home/pi/scripts/github/media_frame/data/music/is_active'
