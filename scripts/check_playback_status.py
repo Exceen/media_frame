@@ -26,7 +26,7 @@ def is_music_view_active():
 def main():
 
     if is_music_view_active() and not is_anything_playing():
-        time.sleep(5)
+        time.sleep(30)
 
         if is_music_view_active() and not is_anything_playing():
             print('music seems to be stopped')

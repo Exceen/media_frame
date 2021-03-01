@@ -444,26 +444,33 @@ sbg = None # slide for foreground
 grid_size = math.ceil(len(config.CODEPOINTS) ** 0.5)
 font = pi3d.Font(config.FONT_FILE, codepoints=config.CODEPOINTS, grid_size=grid_size)
 
+
+text_size_scaling = 1.4
+additional_border_height = 0
+
 additional_text_bkg_height = 0
 if config.TWO_LINE_TRACK:
   additional_text_bkg_height += 18
+  additional_text_bkg_height *= text_size_scaling
 
-  text_artist = pi3d.PointText(font, CAMERA, max_chars=300, point_size=config.SHOW_TEXT_SZ)
+  additional_border_height = 5
+
+  text_artist = pi3d.PointText(font, CAMERA, max_chars=300, point_size=config.SHOW_TEXT_SZ*text_size_scaling)
   textblock_artist = pi3d.TextBlock(x=-DISPLAY.width * 0.5 + 50, y=-DISPLAY.height * 0.4 - 20,
                           z=0.1, rot=0.0, char_count=299,
                           text_format="{}".format(" "), size=0.74,
                           spacing="F", space=0.02, colour=(1.0, 1.0, 1.0, 1.0))
   text_artist.add_text_block(textblock_artist)
 
-text = pi3d.PointText(font, CAMERA, max_chars=200, point_size=config.SHOW_TEXT_SZ)
-textblock = pi3d.TextBlock(x=-DISPLAY.width * 0.5 + 50, y=-DISPLAY.height * 0.4 - 20 + (additional_text_bkg_height*2),
+text = pi3d.PointText(font, CAMERA, max_chars=200, point_size=config.SHOW_TEXT_SZ*text_size_scaling)
+textblock = pi3d.TextBlock(x=-DISPLAY.width * 0.5 + 50, y=-DISPLAY.height * 0.4 - 20 + (additional_text_bkg_height*2) - (additional_border_height/2.0),
                           z=0.1, rot=0.0, char_count=199,
                           text_format="{}".format(" "), size=0.99,
                           spacing="F", space=0.02, colour=(1.0, 1.0, 1.0, 1.0))
 text.add_text_block(textblock)
 back_shader = pi3d.Shader("mat_flat")
 # text_bkg = pi3d.Sprite(w=DISPLAY.width, h=90, y=-DISPLAY.height * 0.4 - 20, z=4.0)
-text_bkg = pi3d.Sprite(w=DISPLAY.width, h=60+(additional_text_bkg_height*2), y=-DISPLAY.height * 0.4 - 20 + (additional_text_bkg_height), z=4.0)
+text_bkg = pi3d.Sprite(w=DISPLAY.width, h=60+(additional_text_bkg_height*2)+(additional_border_height), y=-DISPLAY.height * 0.4 - 20 + (additional_text_bkg_height), z=4.0)
 text_bkg.set_shader(back_shader)
 text_bkg.set_material((0, 0, 0))
 
@@ -522,11 +529,11 @@ while DISPLAY.loop_running():
           else:
             txt_artist, txt = '-', txt
           
-          text_width_artist = 35
+          text_width_artist = 35-8
           txt_artist = truncate_to_approximate_arial_width(txt_artist, text_width_artist)
           textblock_artist.set_text(text_format=txt_artist, wrap=len(txt_artist))
 
-        text_width = 28
+        text_width = 28-7
         txt = truncate_to_approximate_arial_width(txt, text_width)
         textblock.set_text(text_format=txt, wrap=len(txt))
 
