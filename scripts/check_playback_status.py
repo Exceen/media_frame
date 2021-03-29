@@ -26,10 +26,11 @@ def is_music_view_active():
 def main():
 
     if is_music_view_active() and not is_anything_playing():
-        time.sleep(30)
+        print('music seems to be stopped, checking again in 2 minutes')
+        time.sleep(60*2)
 
         if is_music_view_active() and not is_anything_playing():
-            print('music seems to be stopped')
+            print('music seems to be stopped, this is the final check')
             print('changing PictureFrame to photos')
             os.system('/home/pi/scripts/github/media_frame/scripts/change_media_to_photos.sh')
 
