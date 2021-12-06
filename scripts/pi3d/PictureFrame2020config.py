@@ -126,4 +126,4 @@ DISPLAY_H = args.display_h
 CURR_TRACK_PATH = args.curr_track
 TWO_LINE_TRACK = args.two_line_track
 
-CODEPOINTS = '1234567890AÄÀBCÇDÈÉÊEFGHIÍJKLMNÑOÓÖPQRSTUÚÙÜVWXYZ., _-/abcdefghijklmnñopqrstuvwxyzáéèêàçíóúäöüß\'()ï' # limit to 49 ie 7x7 grid_size
+CODEPOINTS = '1234567890AÄÀBCÇDÈÉÊEFGHIÍJKLMNÑOÓÖPQRSTUÚÙÜVWXYZ., _-=/abcdefghijklmnñopqrstuvwxyzáéèêàçíóúäöüß\'()ï' # limit to 49 ie 7x7 grid_size
