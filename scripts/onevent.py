@@ -53,7 +53,7 @@ def check_for_music_video(track_information):
     download_youtube_videos = os.path.isfile(base_path + 'download_youtube_videos')
 
     play_youtube_videos = False
-    download_youtube_videos = True
+    download_youtube_videos = False # unable to control player while downloading, needs to be completely detached
 
     music_videos_path = base_path + 'music_videos/'
     music_video_path = get_music_video_path(track_information, music_videos_path)
