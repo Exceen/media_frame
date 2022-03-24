@@ -199,7 +199,13 @@ def get_track_information_playerctl():
         return state, ''
         # quit()
 
-    track_information = execute('/usr/bin/playerctl --player=' + player + ' metadata --format "{{ artist }} - {{ title }}"')
+    if player == 'ShairportSync':
+        cmd_output = execute('/usr/bin/playerctl --player=' + player + ' metadata')
+        artist = cmd_output.split('xesam:artist')[1].split('ShairportSync')[0].strip()
+        title = cmd_output.split('xesam:title')[1].split('ShairportSync')[0].strip()
+        track_information = artist + ' - ' + title
+    else:
+        track_information = execute('/usr/bin/playerctl --player=' + player + ' metadata --format "{{ artist }} - {{ title }}"')
 
     if track_information == 'No player could handle this command':
         state = 'pause'
