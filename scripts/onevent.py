@@ -195,11 +195,14 @@ def get_track_information_playerctl():
         state = 'play'
     else:
         state = 'pause'
-        print('Error at receiving status, assuming paused state')
+        print('Error at determining status via playerctl, assuming paused state')
         return state, ''
         # quit()
 
     track_information = execute('/usr/bin/playerctl --player=' + player + ' metadata --format "{{ artist }} - {{ title }}"')
+
+    if track_information == 'No player could handle this command':
+        state = 'pause'
 
     return state, track_information
 
