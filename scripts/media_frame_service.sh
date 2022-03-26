@@ -20,6 +20,7 @@ while true; do
         echo "running on ${pid}";
 
         if [ -f $MUSIC_IS_ACTIVE_FILE ]; then
+            echo "music view is active, checking playback status"
             /home/pi/scripts/github/media_frame/scripts/check_playback_status.py
         fi;
     fi;

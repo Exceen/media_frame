@@ -83,12 +83,6 @@ def check_for_music_video(track_information):
             print('music video already downloaded!')
             print(music_video_path)
 
-def get_access_token_from_faked_loop_status():
-    access_token = execute('/usr/bin/playerctl -p spotifyd loop').split('got unknown loop status: ')[-1]
-    if access_token[-4:] == 'None':
-        access_token = access_token[:-4]
-    return access_token
-
 def get_information_through_faked_loop_states(sp_track):
     sp_track = sp_track['item']
     biggest_size = 0
@@ -118,7 +112,8 @@ def main():
 
     artwork_url = None
     if USE_FAKED_LOOP_STATUS_INSTEAD_OF_DBUS_FOR_SPOTIFYD:
-        sp = spotipy.Spotify(auth=get_access_token_from_faked_loop_status())
+        access_token = execute('/usr/bin/playerctl -p spotifyd loop', False).split('got unknown loop status: ')[-1].split('\n')[0]
+        sp = spotipy.Spotify(auth=access_token)
         sp_track = sp.current_user_playing_track()
         if sp_track != None:
             state, track_information, artwork_url = get_information_through_faked_loop_states(sp_track)
@@ -255,9 +250,12 @@ def remove_old_artworks(exceptFile = None):
     for path in files_to_remove:
         os.remove(path)
 
-def execute(command):
+def execute(command, replace_new_lines=True):
     result = subprocess.run([command], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-    return result.stdout.decode('utf-8').replace('\n', '')
+    ret = result.stdout.decode('utf-8')
+    if replace_new_lines:
+        ret = ret.replace('\n', '')
+    return ret
 
 def frame_next(info = ''):
     if os.path.isfile(base_path + 'is_active'):

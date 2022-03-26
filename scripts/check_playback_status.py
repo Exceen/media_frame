@@ -3,6 +3,15 @@ import os
 import subprocess
 import time
 
+import spotipy
+from spotipy.oauth2 import SpotifyClientCredentials
+USE_FAKED_LOOP_STATUS_INSTEAD_OF_DBUS_FOR_SPOTIFYD = True
+
+def is_spotify_running():
+    access_token = execute('/usr/bin/playerctl -p spotifyd loop').split('got unknown loop status: ')[-1].split('\n')[0]
+    sp = spotipy.Spotify(auth=access_token)
+    sp_track = sp.current_user_playing_track()
+    return sp_track != None
 
 def get_running_player():
     players = execute('/usr/bin/playerctl -l').strip().split('\n')
@@ -17,17 +26,16 @@ def get_running_player():
     return None
 
 def is_anything_playing():
-    return get_running_player() != None
+    return get_running_player() != None or (USE_FAKED_LOOP_STATUS_INSTEAD_OF_DBUS_FOR_SPOTIFYD and is_spotify_running())
 
 def is_music_view_active():
     music_is_active_file = '/home/pi/scripts/github/media_frame/data/music/is_active'
     return os.path.isfile(music_is_active_file)
 
 def main():
-
     if is_music_view_active() and not is_anything_playing():
         print('music seems to be stopped, checking again in 8 minutes')
-        time.sleep(60*8)
+        time.sleep(60*1)
 
         if is_music_view_active() and not is_anything_playing():
             print('music seems to be stopped, this is the final check')
