@@ -115,7 +115,7 @@ def main():
         access_token = execute('/usr/bin/playerctl -p spotifyd loop', False).split('got unknown loop status: ')[-1].split('\n')[0]
         sp = spotipy.Spotify(auth=access_token)
         sp_track = sp.current_user_playing_track()
-        if sp_track != None:
+        if sp_track != None and sp_track['is_playing'] == True:
             state, track_information, artwork_url = get_information_through_faked_loop_states(sp_track)
         else:
             state, track_information = get_track_information_playerctl()

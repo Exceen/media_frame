@@ -11,7 +11,7 @@ def is_spotify_running():
     access_token = execute('/usr/bin/playerctl -p spotifyd loop').split('got unknown loop status: ')[-1].split('\n')[0]
     sp = spotipy.Spotify(auth=access_token)
     sp_track = sp.current_user_playing_track()
-    return sp_track != None
+    return sp_track != None and sp_track['is_playing'] == True
 
 def get_running_player():
     players = execute('/usr/bin/playerctl -l').strip().split('\n')
