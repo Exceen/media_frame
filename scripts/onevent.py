@@ -14,7 +14,7 @@ base_path = '/home/pi/scripts/github/media_frame/data/music/'
 
 player = None
 
-USE_FAKED_LOOP_STATUS_INSTEAD_OF_DBUS_FOR_SPOTIFYD = True
+USE_FAKED_LOOP_STATUS_INSTEAD_OF_DBUS_FOR_SPOTIFYD = False
 
 def get_music_video_path(track_information, music_videos_path):
     for f in os.listdir(music_videos_path):
