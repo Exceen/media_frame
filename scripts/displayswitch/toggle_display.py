@@ -1,25 +1,39 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 import RPi.GPIO as GPIO
 import time
 import argparse
 from os import path
 from os import popen
 from os import system
+from subprocess import DEVNULL, STDOUT, call, Popen, PIPE
+
+import asyncio
+from kasa import SmartPlug
 
 switch = 27
 led = 13
 
+WITH_DISCOVERYING = False # throws a lot of errors, still seems to work though...
+FAKE_DISCOVERED_HOST_IP = '192.168.0.129'
+
 config_path = path.dirname(path.realpath(__file__)) + '/display.config'
 
-def set_power(status):
-    host_command = "/home/pi/.local/bin/kasa --plug discover | head -4 | grep -Eo '192.168.[0-9.]{2,}'"
-    host_ip = popen(host_command).read().strip()
-    
-    status_command = '/home/pi/.local/bin/kasa --plug --host ' + host_ip + ' '
+async def toggle_plug(status, plug):
+    await plug.update()
     if status == 'on':
-        system(status_command + 'on')
+        await plug.turn_on()
     elif status == 'off':
-        system(status_command + 'off')
+        await plug.turn_off()
+
+def set_power(status):
+    if WITH_DISCOVERYING:
+        host_command = "/home/pi/.local/bin/kasa --type plug discover | head -4 | grep -Eo '192.168.[0-9.]{2,}'"
+        host_ip = popen(host_command).read().strip()
+    else:
+        host_ip = FAKE_DISCOVERED_HOST_IP
+    
+    p = SmartPlug(host_ip)
+    asyncio.run(toggle_plug(status, p))
 
 def setup_gpio():
     GPIO.setmode(GPIO.BCM)
@@ -33,7 +47,7 @@ def toggle():
 
 def set_config_status(status):
     config_status = 'status=' + status
-    print 'setting config status to ' + status
+    print('setting config status to ' + status)
     with open(config_path, 'w') as writer:
         writer.write(config_status)
 
@@ -56,12 +70,12 @@ def main():
                     args.off = True
 
     if args.on == args.off:
-        print 'Arguments error!'
+        print('Arguments error!')
         quit()
 
     setup_gpio()
 
-    print is_display_on()
+    print(is_display_on())
 
     did_something = False
     if args.on:
@@ -87,13 +101,11 @@ def main():
     GPIO.cleanup()
 
 def log(message):
-    print message
-
+    print(message)
 
     with open('/home/pi/logs.txt', 'a') as f:
         f.write(time.strftime("%Y%m%d-%H%M%S"))
         f.write(' ' + message + '\n')
-
 
 if __name__ == '__main__':
     try:
