@@ -4,3 +4,4 @@ scripts/__pycache__/
 scrpts/youtube/__pychache__/
 __pycache__/
 *.cache
+*.DS_Store
