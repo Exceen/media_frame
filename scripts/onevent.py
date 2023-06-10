@@ -132,32 +132,55 @@ def main():
                 previous_track = f.read()
 
         if previous_track != track_information:
-            f = open(path, 'w')
-            f.write(track_information)
-            f.close()
+            try:
+                f = open(path, 'w')
+                f.write(track_information)
+                f.close()
 
-            if not artwork_url:
-                artwork_url = execute('/usr/bin/playerctl --player=' + player + ' metadata --format "{{ mpris:artUrl }}"')
-            pic_dir = base_path + 'artwork/'
+                if not artwork_url:
+                    try:
+                        artwork_url = execute('/usr/bin/playerctl --player=' + player + ' metadata --format "{{ mpris:artUrl }}"')
+                        print('got artwork url from playerctl/mpris:', artwork_url)
+                    except Exception as e:
+                        print('artwork_error!')
+                        print(e)
+                        raise e
+                        # copy the default artwork??
+                pic_dir = base_path + 'artwork/'
 
-            if player == 'spotifyd':
-                spotifyd(artwork_url, pic_dir)
-            elif player == 'ShairportSync':
-                shairport(artwork_url, pic_dir, track_information)
+                if player == 'spotifyd':
+                    spotifyd(artwork_url, pic_dir)
+                elif player == 'ShairportSync':
+                    shairport(artwork_url, pic_dir, track_information)
 
-            check_for_music_video(track_information)
+                check_for_music_video(track_information)
+
+            except Exception as e:
+                print('general exception!!')
+                print(e)
+                raise e
     else:
         print('paused')
         print('changing PictureFrame to photos')
         os.system('/home/pi/scripts/github/media_frame/scripts/change_media_to_photos.sh')
 
 def spotifyd(artwork_url, pic_dir):
-    artwork_filename = artwork_url.split('/')[-1] + '.jpeg'
-    new_artwork_path = os.path.join(pic_dir, artwork_filename)
-    urllib.request.urlretrieve(artwork_url, new_artwork_path)
+    try:
+        print('retrieving artwork_url:', artwork_url)
+        artwork_filename = artwork_url.split('/')[-1] + '.jpeg'
+        new_artwork_path = os.path.join(pic_dir, artwork_filename)
+        urllib.request.urlretrieve(artwork_url, new_artwork_path)
+        remove_old_artworks(new_artwork_path)
+    except Exception as e:
+        print('error on retrieving artwork from url:', artwork_url)
+        print('using default artwork')
+        remove_old_artworks()
+        copy_default_artwork()        
 
-    remove_old_artworks(new_artwork_path)
     frame_next(player)
+
+def copy_default_artwork():
+    copyfile(base_path + '../../files/spotify_logo.png', base_path + 'artwork/spotify_logo.png')
 
 def shairport(artwork_url, pic_dir, track_information):
     if 'file://' in artwork_url and os.path.isfile(artwork_url[7:]):
@@ -175,7 +198,7 @@ def shairport(artwork_url, pic_dir, track_information):
             frame_next(player + ' artwork')
         else:
             remove_old_artworks()
-            copyfile(base_path + 'default.jpg', base_path + 'artwork/default.jpg')
+            copy_default_artwork()
             frame_next('default artwork')
 
     frame_next(player)

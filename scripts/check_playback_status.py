@@ -5,7 +5,7 @@ import time
 
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
-USE_FAKED_LOOP_STATUS_INSTEAD_OF_DBUS_FOR_SPOTIFYD = True
+USE_FAKED_LOOP_STATUS_INSTEAD_OF_DBUS_FOR_SPOTIFYD = False
 
 def is_spotify_running():
     try:
@@ -18,15 +18,20 @@ def is_spotify_running():
         return False
 
 def get_running_player():
+    # these debug messages where implemented on 2022-12-15
     players = execute('/usr/bin/playerctl -l').strip().split('\n')
     anything_playing = False
+    print('found players (' + str(len(players)) + '):', players)
     for player in players:
         status = execute('/usr/bin/playerctl --player=' + player + ' status').replace('\n', '').strip()
 #        print(player, status)
 
+        print('status for player ' + str(player) + ':', status)
         if 'Playing' in status:
+            print('returning player:', player)
             return player
 
+    print('returning None (no player running)')
     return None
 
 def is_anything_playing():
@@ -38,7 +43,7 @@ def is_music_view_active():
 
 def main():
     if is_music_view_active() and not is_anything_playing():
-        print('music seems to be stopped, checking again in 8 minutes')
+        print('music seems to be stopped, checking again in 1 minute')
         time.sleep(60*1)
 
         if is_music_view_active() and not is_anything_playing():
