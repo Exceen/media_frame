@@ -1,103 +1,27 @@
 #!/usr/bin/python
-import paho.mqtt.client as mqtt
 import os
-import subprocess
+import argparse
 import urllib.request
 from shutil import copyfile
+import paho.mqtt.client as mqtt
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
-import argparse
-import youtube.get_music_video_url
-from multiprocessing import Process
 
-base_path = '/home/pi/scripts/github/media_frame/data/music/'
+import subprocess
+
+BASE_PATH = '/home/pi/scripts/github/media_frame/data/music/'
 
 player = None
+sp = None
 
-USE_FAKED_LOOP_STATUS_INSTEAD_OF_DBUS_FOR_SPOTIFYD = False
+def log(*message):
+    print('ON_EVENT:', *message)
 
-def get_music_video_path(track_information, music_videos_path):
-    for f in os.listdir(music_videos_path):
-        if track_information in f:
-            return music_videos_path + f
-    return None
-
-def download_video(url, music_videos_path, track_information):
-    # youtube-dl -f worst -o "Meshuggah - Clockworks.%(ext)s"   https://www.youtube.com/watch?v=oFiDcazicdk
-    # download_cmd = '/home/pi/.local/bin/youtube-dl -f best -o "'  + music_videos_path + track_information + '.%(ext)s" "' + url + '"&';
-    max_height = str(768)
-    download_cmd = '/home/pi/.local/bin/youtube-dl -f \'bestvideo[height<=' + max_height + ']+bestaudio/best[height<=' + max_height + ']\' -o "'  + music_videos_path + track_information + '.%(ext)s" "' + url + '"&';
-
-    print('executing: "' + download_cmd + '"')
-    os.system(download_cmd)
-
-def play_video(music_video_path):
-    volume = 0.0
-    try:
-        volume = float(execute('/usr/bin/playerctl --player=' + player + ' volume'))
-        if volume > 1.0:
-            volume /= 100
-    except Exception as e:
-        print(e)
-    print(player + ' volume: ' + str(volume))
-
-    os.system('/usr/bin/playerctl --player=' + player + ' pause')
-    # vlc_cmd = '/home/pi/.local/bin/youtube-dl -f worst -o - "' + url + '" | /usr/bin/vlc -f --play-and-exit -'
-    vlc_cmd = '/usr/bin/vlc -f --play-and-exit "' + music_video_path + '"'
-    next_cmd = '/usr/bin/playerctl --player=' + player + ' next'
-
-    print('vlc_cmd: ' + vlc_cmd)
-    os.system(vlc_cmd + '; ' + next_cmd + '&')
-    # quit() # no need to check for available download
-
-def check_for_music_video(track_information):
-    play_youtube_videos = os.path.isfile(base_path + 'play_youtube_videos')
-    download_youtube_videos = os.path.isfile(base_path + 'download_youtube_videos')
-
-    play_youtube_videos = False
-    download_youtube_videos = False # unable to control player while downloading, needs to be completely detached
-
-    music_videos_path = base_path + 'music_videos/'
-    music_video_path = get_music_video_path(track_information, music_videos_path)
-
-    if play_youtube_videos:
-        if music_video_path is None:
-            print('music video not found on local disk')
-        else:
-            print('music video found on local disk')
-            print(music_video_path)
-
-            process = Process(target=play_video, args=(music_video_path, ))
-            process.start()
-
-    if download_youtube_videos:
-        if music_video_path is None:
-            url = youtube.get_music_video_url.get_url(track_information)
-            if url:
-                print('music video url: ' + url)
-                process = Process(target=download_video, args=(url, music_videos_path, track_information, ))
-                process.start()
-            else:
-                print('no music video found on youtube')
-        else:
-            print('music video already downloaded!')
-            print(music_video_path)
-
-def get_information_through_faked_loop_states(sp_track):
-    sp_track = sp_track['item']
-    biggest_size = 0
-    artwork_url = None
-    for image in sp_track['album']['images']:
-        if image['height'] > biggest_size:
-            biggest_size = image['height']
-            artwork_url = image['url']
-    track_information = get_artists(sp_track['artists']) + ' - ' + sp_track['name']
-    state = 'play'
-
-    return state, track_information, artwork_url
+def authenticate_spotify():
+    return spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id='14e48d315bb649dba1a37ce4c764f58c', client_secret='ba72e489deb8442b90263689df69f8fb'))
 
 def main():
-    print('onevent!')
+    global sp
     global player
     parser = argparse.ArgumentParser(description='onevent')
     parser.add_argument('player', nargs=1, help='player (playerctl -l)')
@@ -105,27 +29,78 @@ def main():
     player = args.player[0]
 
     if player == None:
-        print('No player given!')
+        log('No player given!')
         quit()
-    else:
-        print('Player: ' + player)
 
-    artwork_url = None
-    if USE_FAKED_LOOP_STATUS_INSTEAD_OF_DBUS_FOR_SPOTIFYD:
-        access_token = execute('/usr/bin/playerctl -p spotifyd loop', False).split('got unknown loop status: ')[-1].split('\n')[0]
-        sp = spotipy.Spotify(auth=access_token)
-        sp_track = sp.current_user_playing_track()
-        if sp_track != None and sp_track['is_playing'] == True:
-            state, track_information, artwork_url = get_information_through_faked_loop_states(sp_track)
+    state = None
+    track_information = None
+
+    if player == 'spotifyd':
+        # check env variables if something should be done at all
+        event = os.getenv('PLAYER_EVENT') or '?'
+        track_id = os.getenv('TRACK_ID') or ''
+        play_request_id = os.getenv('PLAY_REQUEST_ID') or ''
+
+        log('-'*80)
+        log(track_id.ljust(25) + (player + ': ').center(25) + event.ljust(15) + play_request_id.rjust(15))
+        log(' ')
+
+        supported_events = ['play', 'pause', 'change', 'start', 'preloading']
+        unsupported_events = ['volumeset', 'preload', 'change', 'endoftrack', 'stop', 'load']
+        if event in supported_events:
+            pass
+        elif event in unsupported_events:
+            log(event, 'not supported')
+            quit()
         else:
-            state, track_information = get_track_information_playerctl()
-    else:
-        state, track_information = get_track_information_playerctl()
+            log('!!! unknown event: ', event)
+            # for name, value in os.environ.items():
+                # log("%%%%%%: {0}: {1}".format(name, value))
+            quit()
 
-    print('track_information:', state, track_information)
+        # if you made it here, the event is relevant for this script, so we need to update the player information
+        sp = authenticate_spotify()
+
+        try:
+            old_track = sp.track(track_id=os.getenv('OLD_TRACK_ID'))
+            log('OLD::', get_artists(old_track) + ' - ' + old_track['name'])
+        except Exception as e:
+            log('no old_track_id')
+
+
+        track = None
+        try:
+            track = sp.track(track_id=os.getenv('TRACK_ID'))
+            log('CUR::', get_artists(track) + ' - ' + track['name'])
+        except Exception as e:
+            log('no track_id')
+
+        if track == None:
+            log('no track')
+            quit()
+
+        if event in ['preloading']: # 'preload' has the 'current' track, 'preloading' has the 'next' track
+            log('pre-caching the artwork')
+            cache_artwork_for_track(track)
+            quit()
+
+        state = event
+        track_information = get_artists(track) + ' - ' + track['name']
+
+    elif player == 'ShairportSync':
+        sp = authenticate_spotify()
+        state, track_information = get_track_information_playerctl()
+    else:
+        log('Unkown player:', player)
+        quit()
+
+    ########################################################
+    ##### process the information
 
     if state != 'pause':
-        path = base_path + 'current_track.txt'
+        log('working...')
+
+        path = BASE_PATH + 'current_track.txt'
         previous_track = None
         if os.path.isfile(path):
             with open(path, 'r') as f:
@@ -133,108 +108,145 @@ def main():
 
         if previous_track != track_information:
             try:
-                f = open(path, 'w')
-                f.write(track_information)
-                f.close()
+                with open(path, 'w') as f:
+                    f.write(track_information)
 
-                if not artwork_url:
-                    try:
-                        artwork_url = execute('/usr/bin/playerctl --player=' + player + ' metadata --format "{{ mpris:artUrl }}"')
-                        print('got artwork url from playerctl/mpris:', artwork_url)
-                    except Exception as e:
-                        print('artwork_error!')
-                        print(e)
-                        raise e
-                        # copy the default artwork??
-                pic_dir = base_path + 'artwork/'
+                pic_dir = BASE_PATH + 'artwork/'
 
                 if player == 'spotifyd':
-                    spotifyd(artwork_url, pic_dir)
+                    spotifyd(track, pic_dir)
                 elif player == 'ShairportSync':
-                    shairport(artwork_url, pic_dir, track_information)
-
-                check_for_music_video(track_information)
+                    shairport(track_information, pic_dir)
 
             except Exception as e:
-                print('general exception!!')
-                print(e)
+                log('general exception!!')
+                log(e)
                 raise e
     else:
-        print('paused')
-        print('changing PictureFrame to photos')
+        log('state == paused, changing PictureFrame to photos')
         os.system('/home/pi/scripts/github/media_frame/scripts/change_media_to_photos.sh')
 
-def spotifyd(artwork_url, pic_dir):
+
+def spotifyd(track, pic_dir):
     try:
-        print('retrieving artwork_url:', artwork_url)
-        artwork_filename = artwork_url.split('/')[-1] + '.jpeg'
-        new_artwork_path = os.path.join(pic_dir, artwork_filename)
-        urllib.request.urlretrieve(artwork_url, new_artwork_path)
-        remove_old_artworks(new_artwork_path)
-    except Exception as e:
-        print('error on retrieving artwork from url:', artwork_url)
-        print('using default artwork')
-        remove_old_artworks()
-        copy_default_artwork()        
+        new_artwork_path = os.path.join(pic_dir, get_artwork_filename(track))
 
-    frame_next(player)
+        log(track['album']['id'], '->', track['album']['name'])
 
-def copy_default_artwork():
-    copyfile(base_path + '../../files/spotify_logo.png', base_path + 'artwork/spotify_logo.png')
-
-def shairport(artwork_url, pic_dir, track_information):
-    if 'file://' in artwork_url and os.path.isfile(artwork_url[7:]):
-        artwork_filename = artwork_url.split('/')[-1] + '.jpeg'
-        new_artwork_path = os.path.join(pic_dir, artwork_filename)
-        urllib.request.urlretrieve(artwork_url, new_artwork_path)
-        remove_old_artworks(new_artwork_path)
-    else:
-        artwork_url = get_artwork_url(track_information)
-        if artwork_url != None:
-            artwork_filename = artwork_url.split('/')[-1] + '.jpeg'
-            new_artwork_path = base_path + 'artwork/' + artwork_filename
-            remove_old_artworks()
-            urllib.request.urlretrieve(artwork_url, new_artwork_path)
-            frame_next(player + ' artwork')
+        if os.path.isfile(new_artwork_path):
+            log('artwork already set for current track')
         else:
-            remove_old_artworks()
-            copy_default_artwork()
-            frame_next('default artwork')
+            log('artwork not set for current track')
+            new_artwork_cache_path = cache_artwork_for_track(track)
+            copyfile(new_artwork_cache_path, new_artwork_path)
+            remove_old_artworks(new_artwork_path)
 
+    except Exception as e:
+        log(e)
+        log('error on retrieving artwork from url, using default artwork')
+        remove_old_artworks()
+        copy_default_artwork()
     frame_next(player)
 
-def get_artists(artists):       
-    artist = ''
-    for i in range(0, len(artists)):
-        artist += artists[i]['name']
-        if i != len(artists) - 1:
-            artists += ', '
-    return artist
 
-def get_artwork_url(track_information):
+def cache_artwork_for_track(track):
+    artwork_filename = get_artwork_filename(track)
+    artwork_url = get_artwork_url_from_spotipy_track(track)
+
+    cache_dir = BASE_PATH + 'artwork_cache/'
+    if not os.path.exists(cache_dir):
+        os.makedirs(cache_dir)
+    new_artwork_cache_path = os.path.join(cache_dir, artwork_filename)
+    if not os.path.isfile(new_artwork_cache_path):
+        log('artwork not in cache, retrieving from url')
+        urllib.request.urlretrieve(artwork_url, new_artwork_cache_path)
+    else:
+        log('artwork already in cache')
+    return new_artwork_cache_path
+
+
+def shairport(track_information, pic_dir):
+    track = search_spotify_track(track_information)
+    if track != None:
+        spotifyd(track, pic_dir)
+    else:
+        artwork_url = None
+        try:
+            # NOTE: apparently there's a weird bug with shairport-sync, artwork always seems to be the artwork from the previous track
+            artwork_url = execute('/usr/bin/playerctl --player=' + player + ' metadata --format "{{ mpris:artUrl }}"')
+        except Exception as e:
+            log('error on retrieving artwork url')
+            log(e)
+
+        if artwork_url != None and 'file://' in artwork_url and os.path.isfile(artwork_url[7:]):
+            artwork_filename = artwork_url.split('/')[-1] + '.jpeg'
+            new_artwork_path = os.path.join(pic_dir, artwork_filename)
+
+            urllib.request.urlretrieve(artwork_url, new_artwork_path)
+            remove_old_artworks(new_artwork_path)
+        frame_next(player)
+
+def get_artwork_filename(track):
+    return track['album']['id'] + '.jpeg'
+
+def get_artists(track):
+    return ', '.join([artist['name'] for artist in track['artists']])
+
+def remove_old_artworks(exceptFile = None):
+    pic_dir = BASE_PATH + 'artwork/'
+    files_to_remove = []
+    for f in os.listdir(pic_dir):
+        full_path = os.path.join(pic_dir, f)
+        if os.path.isfile(full_path):
+            if exceptFile is None or full_path != exceptFile:
+                files_to_remove.append(full_path)
+    for path in files_to_remove:
+        os.remove(path)
+
+def get_artwork_url_from_spotipy_track(track):
+    biggest_size = 0
+    artwork_url = None
+    for image in track['album']['images']:
+        if image['height'] > biggest_size:
+            biggest_size = image['height']
+            artwork_url = image['url']
+    return artwork_url
+
+def search_spotify_track(track_information):
     ti_split = track_information.split(' - ')
     if len(ti_split) == 2:
         search_artist = ti_split[0]
         search_title = ti_split[1]
 
-        sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id='14e48d315bb649dba1a37ce4c764f58c', client_secret='ba72e489deb8442b90263689df69f8fb'))
         result = sp.search(search_artist + ' ' + search_title)
         rresult = result['tracks']['items']
-        for r in rresult:
-            if r['name'] == search_title and get_artists(r['artists']) == search_artist:
-                biggest_size_index = -1
-    
-                images = r['album']['images']
-                biggest_size = -1
-                for i in range(0, len(images)):
-                    image = images[i]
-                    if image['height'] > biggest_size:
-                        biggest_size = int(image['height'])
-                        biggest_size_index = i
-
-                if biggest_size_index != -1:
-                    return images[biggest_size_index]['url']
+        for track in rresult:
+            if track['name'] == search_title and get_artists(track) == search_artist:
+                log('found track on spotify')
+                return track
+    log('track not found on spotify: ' + track_information)
     return None
+
+def copy_default_artwork():
+    copyfile(BASE_PATH + '../../files/spotify_logo.png', BASE_PATH + 'artwork/spotify_logo.png')
+
+def frame_next(info = ''):
+    if os.path.isfile(BASE_PATH + 'is_active'):
+        client = mqtt.Client()
+        client.connect("localhost", 1883, 60)
+        client.publish("frame/next")
+        client.disconnect()
+        log('frame/next ' + info)
+    else:
+        log('frame/next ' + info)
+        log('changing PictureFrame to music')
+        os.system('/home/pi/scripts/github/media_frame/scripts/change_media_to_music.sh')
+
+
+
+
+
+#### shairpoint sync specific functions
 
 def get_track_information_playerctl():
     playerctl_state = execute('/usr/bin/playerctl --player=' + player + ' status')
@@ -249,29 +261,22 @@ def get_track_information_playerctl():
         return state, ''
         # quit()
 
-    if player == 'ShairportSync':
-        cmd_output = execute('/usr/bin/playerctl --player=' + player + ' metadata')
+    cmd_output = execute('/usr/bin/playerctl --player=' + player + ' metadata')
+    try:
         artist = cmd_output.split('xesam:artist')[1].split('ShairportSync')[0].strip()
+    except Exception as e:
+        artist = 'Unknown Artist'
+    try:
         title = cmd_output.split('xesam:title')[1].split('ShairportSync')[0].strip()
-        track_information = artist + ' - ' + title
-    else:
-        track_information = execute('/usr/bin/playerctl --player=' + player + ' metadata --format "{{ artist }} - {{ title }}"')
+    except Exception as e:
+        title = 'Unknown Title'
+
+    track_information = artist + ' - ' + title
 
     if track_information == 'No player could handle this command':
         state = 'pause'
 
     return state, track_information
-
-def remove_old_artworks(exceptFile = None):
-    pic_dir = base_path + 'artwork/'
-    files_to_remove = []
-    for f in os.listdir(pic_dir):
-        full_path = os.path.join(pic_dir, f)
-        if os.path.isfile(full_path):
-            if exceptFile is None or full_path != exceptFile:
-                files_to_remove.append(full_path)
-    for path in files_to_remove:
-        os.remove(path)
 
 def execute(command, replace_new_lines=True):
     result = subprocess.run([command], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
@@ -280,20 +285,6 @@ def execute(command, replace_new_lines=True):
         ret = ret.replace('\n', '')
     return ret
 
-def frame_next(info = ''):
-    if os.path.isfile(base_path + 'is_active'):
-        client = mqtt.Client()
-        client.connect("localhost", 1883, 60)
-        client.publish("frame/next")
-        client.disconnect()
-        print('frame/next ' + info)
-    else:
-        print('frame/next ' + info)
-        print('changing PictureFrame to music')
-        os.system('/home/pi/scripts/github/media_frame/scripts/change_media_to_music.sh')
 
 if __name__ == '__main__':
     main()
-
-# playerctl --player=spotifyd metadata --format "{{ artist }} - {{ title }} | {{ mpris:artUrl }}"
-# playerctl --player=spotifyd metadata --format "{{ artist }} - {{ title }}" > /home/pi/scripts/github/media_frame/data/music/current_track.txt
