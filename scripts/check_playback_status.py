@@ -42,6 +42,8 @@ def is_music_view_active():
     return os.path.isfile(music_is_active_file)
 
 def main():
+    print('check disabled')
+    quit()
     if is_music_view_active() and not is_anything_playing():
         print('music seems to be stopped, checking again in 1 minute')
         time.sleep(60*1)

@@ -1,7 +1,7 @@
 #!/bin/bash
 export DISPLAY=:0.0;
 
-MUSIC_IS_ACTIVE_FILE=/home/pi/scripts/github/media_frame/data/music/is_active
+# MUSIC_IS_ACTIVE_FILE=/home/pi/scripts/github/media_frame/data/music/is_active
 PID_FILE=/home/pi/scripts/github/media_frame/data/pid
 pid=0
 
@@ -19,10 +19,10 @@ while true; do
     else
         echo "running on ${pid}";
 
-        if [ -f $MUSIC_IS_ACTIVE_FILE ]; then
-            echo "music view is active, checking playback status"
-            /home/pi/scripts/github/media_frame/scripts/check_playback_status.py
-        fi;
+        # if [ -f $MUSIC_IS_ACTIVE_FILE ]; then
+        #     echo "music view is active, checking playback status"
+        #     /home/pi/scripts/github/media_frame/scripts/check_playback_status.py
+        # fi;
     fi;
 
     sleep 15;

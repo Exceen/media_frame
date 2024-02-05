@@ -22,6 +22,10 @@ import locale
 import subprocess
 import string
 
+
+from multiprocessing import Process
+from time import sleep
+
 from pi3d.Texture import MAX_SIZE
 from PIL import Image, ExifTags, ImageFilter # these are needed for getting exif data from images
 import PictureFrame2020config as config
@@ -274,6 +278,13 @@ if config.LOAD_GEOLOC:
 iFiles = []
 nFi = 0
 next_pic_num = 0
+
+MUSIC_DURATION_CHECKER_THREAD = None
+
+def call_music_duration_checker(seconds_left):
+  sleep(seconds_left)
+  os.system('/home/pi/scripts/github/media_frame/scripts/change_media_to_photos.sh')
+
 if config.USE_MQTT:
   try:
     import paho.mqtt.client as mqtt
@@ -285,6 +296,9 @@ if config.USE_MQTT:
       # TODO not ideal to have global but probably only reasonable way to do it
       global next_pic_num, iFiles, nFi, date_from, date_to, time_delay
       global delta_alpha, fade_time, shuffle, quit, paused, nexttm, subdirectory
+
+      global MUSIC_DURATION_CHECKER_THREAD
+
       TRUTH_VALS = {"on":True, "off":False, "true":True, "false":False, "yes":True, "no":False}
       msg = message.payload.decode("utf-8")
       try:
@@ -338,10 +352,25 @@ if config.USE_MQTT:
       elif message.topic == "frame/next":
         reselect = True
         refresh = True
+      elif message.topic == "music/seconds_left":
+        seconds_left = int(msg)
+
+        seconds_left += 5 # add 5 seconds to make sure the music is finished, tolerance
+
+        if MUSIC_DURATION_CHECKER_THREAD is not None:
+          MUSIC_DURATION_CHECKER_THREAD.terminate()
+
+        MUSIC_DURATION_CHECKER_THREAD = Process(target=call_music_duration_checker, args=(seconds_left, ))
+        MUSIC_DURATION_CHECKER_THREAD.start()
+
       elif message.topic == "frame/subdirectory":
         subdirectory = msg
         reselect = True
         refresh = True
+
+        if subdirectory == 'photos' and MUSIC_DURATION_CHECKER_THREAD is not None:
+          MUSIC_DURATION_CHECKER_THREAD.terminate()
+
       elif message.topic == "frame/delete":
         f_to_delete = iFiles[pic_num][0]
         f_name_to_delete = os.path.split(f_to_delete)[1]
@@ -411,6 +440,9 @@ if config.USE_MQTT:
     client.subscribe("frame/music_on", qos=0) # toggle current song information on
     client.subscribe("frame/text_off", qos=0) # turn all name, date, location off
     client.subscribe("frame/text_refresh", qos=0) # restarts current slide showing text set above
+
+    client.subscribe("music/seconds_left", qos=0)
+
     client.on_connect = on_connect
     client.on_message = on_message
     client.publish("frame/paused", payload="off", qos=0) # un-pause the slideshow on start

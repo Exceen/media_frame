@@ -1,4 +1,5 @@
 #!/usr/bin/python
+import shutil
 import os
 import argparse
 import urllib.request
@@ -7,6 +8,7 @@ import paho.mqtt.client as mqtt
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 
+from time import sleep
 import subprocess
 
 BASE_PATH = '/home/pi/scripts/github/media_frame/data/music/'
@@ -25,6 +27,7 @@ def main():
     global player
     parser = argparse.ArgumentParser(description='onevent')
     parser.add_argument('player', nargs=1, help='player (playerctl -l)')
+    parser.add_argument('forced_state', nargs='*', help='force state')
     args = parser.parse_args()
     player = args.player[0]
 
@@ -45,8 +48,20 @@ def main():
         log(track_id.ljust(25) + (player + ': ').center(25) + event.ljust(15) + play_request_id.rjust(15))
         log(' ')
 
-        supported_events = ['play', 'pause', 'change', 'start', 'preloading']
-        unsupported_events = ['volumeset', 'preload', 'change', 'endoftrack', 'stop', 'load']
+        ####################################################################
+        # TODO: only to this when necessary (not on pausing for example)
+        try:
+            duration_s = int(os.getenv('DURATION_MS')) / 1000
+            position_s = int(os.getenv('POSITION_MS')) / 1000
+            seconds_left = int(duration_s - position_s)
+            log('seconds left:', seconds_left)
+            mqtt_publish('music/seconds_left', str(seconds_left))
+        except Exception as e:
+            log('no duration_ms')
+        ####################################################################
+
+        supported_events = ['play', 'pause', 'change', 'preloading'] # 'start'
+        unsupported_events = ['volumeset', 'preload', 'change', 'endoftrack', 'stop', 'load', 'start']
         if event in supported_events:
             pass
         elif event in unsupported_events:
@@ -61,12 +76,11 @@ def main():
         # if you made it here, the event is relevant for this script, so we need to update the player information
         sp = authenticate_spotify()
 
-        try:
-            old_track = sp.track(track_id=os.getenv('OLD_TRACK_ID'))
-            log('OLD::', get_artists(old_track) + ' - ' + old_track['name'])
-        except Exception as e:
-            log('no old_track_id')
-
+        # try:
+        #     old_track = sp.track(track_id=os.getenv('OLD_TRACK_ID'))
+        #     log('OLD::', get_artists(old_track) + ' - ' + old_track['name'])
+        # except Exception as e:
+        #     log('no old_track_id')
 
         track = None
         try:
@@ -76,7 +90,7 @@ def main():
             log('no track_id')
 
         if track == None:
-            log('no track')
+            log('no track found for given ID')
             quit()
 
         if event in ['preloading']: # 'preload' has the 'current' track, 'preloading' has the 'next' track
@@ -90,16 +104,25 @@ def main():
     elif player == 'ShairportSync':
         sp = authenticate_spotify()
         state, track_information = get_track_information_playerctl()
+    elif player == 'ShairportSync-artwork':
+        frame_next(player)
     else:
-        log('Unkown player:', player)
+        log('Unknown player:', player)
         quit()
 
     ########################################################
     ##### process the information
 
-    if state != 'pause':
-        log('working...')
+    log('found state:', state + (' (forced: ' + args.forced_state[0] + ')' if len(args.forced_state) > 0 else ''))
 
+    if state == None:
+        quit()
+
+    if len(args.forced_state) > 0 and args.forced_state[0] != state:
+        log('forcing state', args.forced_state[0], 'from', state)
+        state = args.forced_state[0]
+
+    if state != 'pause':
         path = BASE_PATH + 'current_track.txt'
         previous_track = None
         if os.path.isfile(path):
@@ -107,6 +130,7 @@ def main():
                 previous_track = f.read()
 
         if previous_track != track_information:
+            log('track changed, updating PictureFrame')
             try:
                 with open(path, 'w') as f:
                     f.write(track_information)
@@ -122,6 +146,8 @@ def main():
                 log('general exception!!')
                 log(e)
                 raise e
+        else:
+            log('same track as before')
     else:
         log('state == paused, changing PictureFrame to photos')
         os.system('/home/pi/scripts/github/media_frame/scripts/change_media_to_photos.sh')
@@ -166,24 +192,41 @@ def cache_artwork_for_track(track):
 
 
 def shairport(track_information, pic_dir):
+    # shairport_spotify_fallback(track_information, pic_dir)
+
+    artwork_url = None
+    try:
+        # NOTE: apparently there's a weird bug with shairport-sync, artwork always seems to be the artwork from the previous track
+        artwork_url = 'file:' + execute('/usr/bin/playerctl --player=' + player + ' metadata --format "{{ mpris:artUrl }}"').split('file:')[-1]
+
+        if artwork_url != None and 'file://' in artwork_url and os.path.isfile(artwork_url[7:]):
+            artwork_filename = artwork_url.split('/')[-1]
+            new_artwork_path = os.path.join(pic_dir, artwork_filename)
+
+            log('retrieving artwork', artwork_filename)
+
+            # urllib.request.urlretrieve(artwork_url, new_artwork_path)
+            shutil.copyfile(artwork_url[7:], new_artwork_path)
+            remove_old_artworks(new_artwork_path)
+            frame_next(player)
+            return
+        # else:
+        #     shairport_spotify_fallback(track_information, pic_dir)
+    except Exception as e:
+        log('error on retrieving artwork url')
+        log(e)
+    
+    shairport_spotify_fallback(track_information, pic_dir)
+
+def shairport_spotify_fallback(track_information, pic_dir):
+    log('shairport-sync artwork not found, trying spotify fallback')
     track = search_spotify_track(track_information)
     if track != None:
         spotifyd(track, pic_dir)
     else:
-        artwork_url = None
-        try:
-            # NOTE: apparently there's a weird bug with shairport-sync, artwork always seems to be the artwork from the previous track
-            artwork_url = execute('/usr/bin/playerctl --player=' + player + ' metadata --format "{{ mpris:artUrl }}"')
-        except Exception as e:
-            log('error on retrieving artwork url')
-            log(e)
-
-        if artwork_url != None and 'file://' in artwork_url and os.path.isfile(artwork_url[7:]):
-            artwork_filename = artwork_url.split('/')[-1] + '.jpeg'
-            new_artwork_path = os.path.join(pic_dir, artwork_filename)
-
-            urllib.request.urlretrieve(artwork_url, new_artwork_path)
-            remove_old_artworks(new_artwork_path)
+        log('track not found on spotify, using default artwork')
+        remove_old_artworks()
+        copy_default_artwork()
         frame_next(player)
 
 def get_artwork_filename(track):
@@ -232,17 +275,18 @@ def copy_default_artwork():
 
 def frame_next(info = ''):
     if os.path.isfile(BASE_PATH + 'is_active'):
-        client = mqtt.Client()
-        client.connect("localhost", 1883, 60)
-        client.publish("frame/next")
-        client.disconnect()
+        mqtt_publish('frame/next')
         log('frame/next ' + info)
     else:
         log('frame/next ' + info)
         log('changing PictureFrame to music')
         os.system('/home/pi/scripts/github/media_frame/scripts/change_media_to_music.sh')
 
-
+def mqtt_publish(topic, payload=None):
+    client = mqtt.Client()
+    client.connect("localhost", 1883, 60)
+    client.publish(topic, payload)
+    client.disconnect()
 
 
 
@@ -257,7 +301,7 @@ def get_track_information_playerctl():
         state = 'play'
     else:
         state = 'pause'
-        print('Error at determining status via playerctl, assuming paused state')
+        log('Error at determining status via playerctl, assuming paused state')
         return state, ''
         # quit()
 
@@ -270,6 +314,14 @@ def get_track_information_playerctl():
         title = cmd_output.split('xesam:title')[1].split('ShairportSync')[0].strip()
     except Exception as e:
         title = 'Unknown Title'
+
+    try:
+        length = cmd_output.split('mpris:length')[1].split('ShairportSync')[0].strip()
+        length = int(int(length) / 1000000)
+        log('length:', length)
+        mqtt_publish('music/seconds_left', str(length))
+    except Exception as e:
+        log('no length')
 
     track_information = artist + ' - ' + title
 
