@@ -7,11 +7,13 @@ from shutil import copyfile
 import paho.mqtt.client as mqtt
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
+from datetime import datetime, timedelta
 
 from time import sleep
 import subprocess
 
 BASE_PATH = '/home/pi/scripts/github/media_frame/data/music/'
+SHAIRPORT_ARTWORK_RETRIEVAL_TIMEOUT_SECONDS = 3
 
 player = None
 sp = None
@@ -197,7 +199,15 @@ def shairport(track_information, pic_dir):
     artwork_url = None
     try:
         # NOTE: apparently there's a weird bug with shairport-sync, artwork always seems to be the artwork from the previous track
+        # maybe the file-url is updated with a delay
+        start_time = datetime.now()
         artwork_url = 'file:' + execute('/usr/bin/playerctl --player=' + player + ' metadata --format "{{ mpris:artUrl }}"').split('file:')[-1]
+        while artwork_url is None or 'file://' not in artwork_url or not os.path.isfile(artwork_url[7:]):
+            if start_time + timedelta(seconds=SHAIRPORT_ARTWORK_RETRIEVAL_TIMEOUT_SECONDS) < datetime.now():
+                log('timeout on retrieving artwork url')
+                break
+            sleep(0.2)
+            artwork_url = 'file:' + execute('/usr/bin/playerctl --player=' + player + ' metadata --format "{{ mpris:artUrl }}"').split('file:')[-1]
 
         if artwork_url != None and 'file://' in artwork_url and os.path.isfile(artwork_url[7:]):
             artwork_filename = artwork_url.split('/')[-1]

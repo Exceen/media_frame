@@ -13,7 +13,7 @@ def get_filename(photo):
     return filename
 
 def main():
-    api = PyiCloudService('exceen.dev@gmail.com')
+    api = PyiCloudService('exceen.dev@icloud.com')
 
     # photos_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'photo_frame') + '/'
     photos_directory = '/home/pi/scripts/github/media_frame/data/photos/'
