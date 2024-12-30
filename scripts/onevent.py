@@ -51,28 +51,23 @@ def main():
         log(' ')
 
         ####################################################################
-        # TODO: only to this when necessary (not on pausing for example)
-        try:
-            duration_s = int(os.getenv('DURATION_MS')) / 1000
-            position_s = int(os.getenv('POSITION_MS')) / 1000
-            seconds_left = int(duration_s - position_s)
-            log('seconds left:', seconds_left)
-            mqtt_publish('music/seconds_left', str(seconds_left))
-        except Exception as e:
-            log('no duration_ms')
-        ####################################################################
 
-        supported_events = ['play', 'pause', 'change', 'preloading'] # 'start'
-        unsupported_events = ['volumeset', 'preload', 'change', 'endoftrack', 'stop', 'load', 'start']
+        supported_events = ['play', 'pause', 'preloading', 'load', 'start', 'seeked'] # 'change'
+        unsupported_events = ['volumeset', 'preload', 'change', 'endoftrack', 'stop', 'playrequestid_changed', 'sessionconnected', 'sessiondisconnected', 'filterexplicit_changed', 'autoplay_changed', 'clientchanged']
+
+        # for name, value in os.environ.items():
+        #     log("%%%%%%: {0}: {1}".format(name, value))
+
+        if event == 'start':
+            event = 'play'
+
         if event in supported_events:
             pass
         elif event in unsupported_events:
             log(event, 'not supported')
             quit()
         else:
-            log('!!! unknown event: ', event)
-            # for name, value in os.environ.items():
-                # log("%%%%%%: {0}: {1}".format(name, value))
+            log('!!! UNKNOWN EVENT NOT IMPLEMENTED: ', event)
             quit()
 
         # if you made it here, the event is relevant for this script, so we need to update the player information
@@ -95,10 +90,20 @@ def main():
             log('no track found for given ID')
             quit()
 
-        if event in ['preloading']: # 'preload' has the 'current' track, 'preloading' has the 'next' track
+        if event in ['preloading', 'load']: # 'preload' has the 'current' track, 'preloading' has the 'next' track
             log('pre-caching the artwork')
             cache_artwork_for_track(track)
             quit()
+        elif event in ['play', 'seeked']:
+            try:
+                duration_s = int(int(track['duration_ms']) / 1000)
+                position_s = int(os.getenv('POSITION_MS')) / 1000
+
+                seconds_left = int(duration_s - position_s)
+                log('seconds left:', seconds_left)
+                mqtt_publish('music/seconds_left', str(seconds_left))
+            except Exception as e:
+                log('unable to communicate seconds left')
 
         state = event
         track_information = get_artists(track) + ' - ' + track['name']
