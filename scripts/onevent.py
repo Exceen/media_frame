@@ -47,7 +47,7 @@ def main():
         play_request_id = os.getenv('PLAY_REQUEST_ID') or ''
 
         log('-'*80)
-        log(track_id.ljust(25) + (player + ': ').center(25) + event.ljust(15) + play_request_id.rjust(15))
+        log(track_id.ljust(25) + (player + ': ').center(25) + event.ljust(25) + play_request_id.rjust(5))
         log(' ')
 
         ####################################################################
@@ -64,7 +64,7 @@ def main():
         if event in supported_events:
             pass
         elif event in unsupported_events:
-            log(event, 'not supported')
+            log(f'"{event}" has no functionality')
             quit()
         else:
             log('!!! UNKNOWN EVENT NOT IMPLEMENTED: ', event)
