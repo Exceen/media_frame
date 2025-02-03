@@ -46,6 +46,9 @@ date_from = None
 date_to = None
 quit = False
 paused = False # NB must be set to True *only* after the first iteration of the show!
+
+status_icon = None
+
 #####################################################
 # only alter below here if you're keen to experiment!
 #####################################################
@@ -297,6 +300,7 @@ if config.USE_MQTT:
       global next_pic_num, iFiles, nFi, date_from, date_to, time_delay
       global delta_alpha, fade_time, shuffle, quit, paused, nexttm, subdirectory
 
+      global status_icon
       global MUSIC_DURATION_CHECKER_THREAD
 
       TRUTH_VALS = {"on":True, "off":False, "true":True, "false":False, "yes":True, "no":False}
@@ -409,6 +413,19 @@ if config.USE_MQTT:
           next_pic_num -= 1
           refresh = True
 
+      elif message.topic == 'status_icon':
+          if msg.strip() == '':
+            status_icon = None
+            config.SHOW_STATUS_ICON = True
+          elif msg == 'on' or msg == 'yes':
+            status_icon = True
+            config.SHOW_STATUS_ICON = True
+          elif msg == 'hide':
+            config.SHOW_STATUS_ICON = False
+          else:
+            status_icon = False
+            config.SHOW_STATUS_ICON = True
+
       if reselect:
         iFiles, nFi = get_files(date_from, date_to)
         next_pic_num = 0
@@ -442,6 +459,8 @@ if config.USE_MQTT:
     client.subscribe("frame/text_refresh", qos=0) # restarts current slide showing text set above
 
     client.subscribe("music/seconds_left", qos=0)
+
+    client.subscribe('status_icon', qos=0)
 
     client.on_connect = on_connect
     client.on_message = on_message
@@ -507,9 +526,41 @@ text_bkg.set_shader(back_shader)
 text_bkg.set_material((0, 0, 0))
 
 
+#### FOR STATUS ICON START ####
+status_icon_text = pi3d.PointText(font, CAMERA, max_chars=200, point_size=50)
+# status_icon_textblock = pi3d.TextBlock(x=DISPLAY.width*0.5 - 40, y=DISPLAY.height*0.5 - 20,
+# status_icon_textblock = pi3d.TextBlock(x=DISPLAY.width*0.5 - 25, y=DISPLAY.height*0.5 - 10,
+status_icon_textblock = pi3d.TextBlock(x=-DISPLAY.width*0.5, y=DISPLAY.height*0.5 - 10,
+                          z=0.1, rot=0.0, char_count=199,
+                          text_format="{}".format(" "), size=0.99,
+                          spacing="F", space=0.02, colour=(1.0, 1.0, 1.0, 1.0))
+status_icon_text.add_text_block(status_icon_textblock)
+txt = str('●')
+status_icon_textblock.set_text(text_format=txt, wrap=len(txt))
+next_status_icon_check = None
+#### FOR STATUS ICON END ####
+
+
+
 num_run_through = 0
 while DISPLAY.loop_running():
   tm = time.time()
+
+
+  if config.SHOW_STATUS_ICON:
+    if next_status_icon_check is None or tm > next_status_icon_check:
+      if status_icon is None:
+         status_icon_textblock.colouring.set_colour(colour=(0.5, 0.5, 0.5, 0.4))
+      elif status_icon == True:
+         status_icon_textblock.colouring.set_colour(colour=(0, 0.7, 0, 0.4))
+      else:
+         status_icon_textblock.colouring.set_colour(colour=(0.7, 0, 0, 0.4))
+
+      next_status_icon_check = tm + 1.0
+    # text2.regen()
+    status_icon_text.draw()
+
+
   if (tm > nexttm and not paused) or (tm - nexttm) >= 86400.0: # this must run first iteration of loop
     if nFi > 0:
       nexttm = tm + time_delay

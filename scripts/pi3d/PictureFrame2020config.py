@@ -74,6 +74,7 @@ parse.add_argument(      "--display_w",     default=None, type=int, help="width 
 parse.add_argument(      "--display_h",     default=None, type=int, help="height of display surface")
 parse.add_argument(      "--curr_track",    default="/home/pi/scripts/github/media_frame/data/music/current_track.txt", help="file to song text to display")
 parse.add_argument(      "--two_line_track",default=False, type=str_to_bool, help="shows artist in a second smaller line")
+parse.add_argument(      "--status-icon",   default=False, type=str_to_bool, help="shows a status icon for whatever you like")
 args = parse.parse_args()
 print(args.display_x)
 
@@ -122,8 +123,9 @@ DISPLAY_X = args.display_x
 DISPLAY_Y = args.display_y
 DISPLAY_W = args.display_w
 DISPLAY_H = args.display_h
+SHOW_STATUS_ICON = args.status_icon
 
 CURR_TRACK_PATH = args.curr_track
 TWO_LINE_TRACK = args.two_line_track
 
-CODEPOINTS = '1234567890AÄÀBCÇDÈÉÊEFGHIÍJKLMNÑOÓÖPQRSTUÚÙÜVWXYZ., _-=/abcdefghijklmnñopqrstuvwxyzáéèêàçíóúäöüß\'()ï' # limit to 49 ie 7x7 grid_size
+CODEPOINTS = '1234567890AÄÀBCÇDÈÉÊEFGHIÍJKLMNÑOÓÖPQRSTUÚÙÜVWXYZ., _-=/abcdefghijklmnñopqrstuvwxyzáéèêàçíóúäöüß\'()ï●' # limit to 49 ie 7x7 grid_size
